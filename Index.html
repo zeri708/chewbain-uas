@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chewbain: Solusi Kreatif untuk Quality Time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-main: #FFFFFF;
+            --bg-secondary: #F8F9FA;
+            --accent: #D4A59A;
+            --accent-hover: #C28E80;
+            --text-dark: #212529;
+            --text-muted: #6c757d;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-secondary);
+            color: var(--text-muted);
+        }
+        h1, h2, h3, h4, h5, h6 { 
+            font-family: 'Playfair Display', serif; 
+            color: var(--text-dark);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        #threejs-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 1rem;
+        }
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+        .text-accent {
+            color: var(--accent);
+        }
+        .section-card {
+            background-color: var(--bg-main);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        #hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: 1;
+            transform: translateX(-50%) translateY(-50%);
+            object-fit: cover;
+        }
+         #cookie-mascot {
+            position: fixed;
+            top: 100vh; /* Start off-screen at the bottom */
+            left: 50vw;
+            width: 80px;
+            height: 80px;
+            background-image: url('https://placehold.co/80x80/f2d2a9/c7a17a?text=');
+            background-size: cover;
+            border-radius: 50%;
+            border: 4px solid #c7a17a;
+            z-index: 1000;
+            transition: top 3s ease-in-out, left 3s ease-in-out;
+            cursor: pointer;
+        }
+        #cookie-bubble {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: max-content;
+            max-width: 200px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #cookie-bubble.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        #cookie-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid white;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+
+    <div id="cookie-mascot">
+        <div id="cookie-bubble">Hai! Yuk kita jelajahi!</div>
+    </div>
+
+    <header class="bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-accent">Chewbain</h1>
+            <div class="hidden md:flex space-x-8 items-center font-semibold text-gray-600">
+                <a href="#masalah" class="hover:text-accent transition-colors">Masalah</a>
+                <a href="#solusi" class="hover:text-accent transition-colors">Solusi</a>
+                <a href="#kompetitor" class="hover:text-accent transition-colors">Analisis</a>
+                <a href="#pre-order" class="btn-primary px-5 py-2 rounded-full transition-all duration-300 hover:scale-105">Pre-Order</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-700">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+             <a href="#masalah" class="block py-2 hover:text-accent transition-colors font-semibold">Masalah</a>
+             <a href="#solusi" class="block py-2 hover:text-accent transition-colors font-semibold">Solusi</a>
+             <a href="#kompetitor" class="block py-2 hover:text-accent transition-colors font-semibold">Analisis</a>
+             <a href="#pre-order" class="block mt-2 btn-primary px-4 py-2 rounded-full transition-colors text-center font-semibold">Pre-Order</a>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="relative min-h-[80vh] flex items-center overflow-hidden">
+            <video id="hero-video" autoplay loop muted playsinline>
+                <source src="https://videos.pexels.com/video-files/3209828/3209828-hd_1280_720_25fps.mp4" type="video/mp4">
+                Browser Anda tidak mendukung tag video.
+            </video>
+            <div class="absolute inset-0 bg-black/50 z-20"></div>
+            <div class="container mx-auto px-6 text-center relative z-30">
+                <h1 class="text-5xl md:text-7xl font-bold mb-4 leading-tight text-white">Lupakan Ponselmu,<br/>Temukan Kembali Pasanganmu.</h1>
+                <p class="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-200">Chewbain adalah kit aktivitas premium yang dirancang untuk melawan distraksi digital dan mempererat hubungan dengan cara yang elegan dan menyenangkan.</p>
+                <a href="#solusi" class="btn-primary px-8 py-4 rounded-full text-lg font-semibold transition-transform hover:scale-105 inline-block">Jelajahi Solusinya</a>
+            </div>
+        </section>
+
+        <section id="masalah" class="py-20 md:py-28">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Epidemi Sunyi di Era Digital</h2>
+                    <p class="text-lg mb-12">Kita mungkin duduk bersebelahan, tapi pikiran kita berada di dunia lain. Fenomena *phubbing* bukan lagi sekadar kebiasaan buruk, ini adalah ancaman nyata bagi keintiman, dan data membuktikannya.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="section-card p-8 text-center">
+                        <div id="stat1" class="text-7xl font-bold text-accent" data-target="70">0</div>
+                        <p class="text-2xl font-semibold mt-2">% Pasangan</p>
+                        <p class="mt-2 text-muted">Merasa ponsel menjadi distraksi signifikan saat *quality time*.</p>
+                    </div>
+                    <div class="section-card p-8 text-center">
+                        <div id="stat2" class="text-7xl font-bold text-accent" data-target="53">0</div>
+                        <p class="text-2xl font-semibold mt-2">% Pasangan</p>
+                        <p class="mt-2 text-muted">Mengaku kesulitan menemukan ide aktivitas kencan yang bermakna.</p>
+                    </div>
+                </div>
+                 <p class="text-center text-sm mt-8 text-gray-500">*Berdasarkan survei internal Chewbain.</p>
+            </div>
+        </section>
+
+        <section id="solusi" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Buka Kotak Kebahagiaan Anda</h2>
+                    <p class="text-lg mb-12">Ini bukan sekadar produk, ini adalah sebuah pengalaman. Klik pada kotak untuk membongkar keseruannya dan temukan dunia kreativitas di dalamnya. Klik setiap item untuk melihat detailnya.</p>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-8 items-start">
+                    <div class="lg:col-span-2">
+                        <div id="threejs-container" class="w-full h-96 md:h-[500px] rounded-2xl cursor-pointer bg-gray-100 shadow-inner relative">
+                            <div id="instruction-text" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-500 font-semibold p-4 bg-white/70 rounded-lg transition-opacity duration-500">Klik Kotak Untuk Membuka</div>
+                        </div>
+                    </div>
+                    <div id="item-info-panel" class="bg-white p-6 rounded-2xl shadow-lg opacity-0 transform -translate-x-4 h-full">
+                        <img id="item-image" src="" alt="Gambar item" class="w-full h-48 object-cover rounded-lg mb-4 hidden">
+                        <h3 id="item-title" class="text-2xl font-bold mb-2 text-accent">Pilih sebuah item</h3>
+                        <p id="item-description" class="text-muted">Klik pada salah satu item 3D setelah kotak terbuka untuk melihat informasinya di sini.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="persona" class="py-20 md:py-28 bg-secondary">
+            <div class="container mx-auto px-6">
+                 <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Dirancang untuk Pasangan Modern</h2>
+                    <p class="text-lg mb-12">Kami memahami Anda. Chewbain diciptakan untuk pasangan seperti "Rian & Dita"—Gen Z yang melek teknologi, kreatif, dan mendambakan koneksi otentik di tengah kesibukan digital.</p>
+                </div>
+                <div class="section-card max-w-4xl mx-auto p-8 grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-3xl font-bold mb-4">Profil Persona: Rian & Dita</h3>
+                        <p>Pasangan muda di Jabodetabek yang aktif secara sosial dan digital. Mereka mencari pengalaman baru yang lebih dari sekadar nongkrong di kafe.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 text-accent">Tantangan Mereka (Pain Points)</h4>
+                            <ul class="list-disc list-inside space-y-1 text-muted">
+                               <li>*Quality time* sering berakhir dengan sibuk di ponsel masing-masing.</li>
+                               <li>Merasa hubungan menjadi monoton dan butuh percikan baru.</li>
+                               <li>Kesulitan menemukan ide kencan yang unik dan tidak merepotkan.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 mt-4 text-accent">Tujuan Mereka (Goals)</h4>
+                             <ul class="list-disc list-inside space-y-1 text-muted">
+                               <li>Menciptakan kenangan bersama yang nyata dan tak terlupakan.</li>
+                               <li>Menemukan aktivitas yang memicu percakapan tulus.</li>
+                               <li>Mendukung merek lokal yang otentik dan memiliki nilai.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="kompetitor" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Apa yang Membuat Chewbain Berbeda?</h2>
+                    <p class="text-lg mb-12">Di pasar yang ramai, kami tidak hanya menjual produk. Kami menawarkan sebuah ekosistem. Inilah perbandingan kami dengan yang lain.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full max-w-5xl mx-auto bg-white rounded-2xl shadow-lg text-left border-collapse overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th class="p-4 border-b-2 border-gray-100 font-bold">Fitur</th>
+                                <th class="p-4 border-b-2 border-gray-100 font-bold text-center text-white bg-accent">Chewbain</th>
+                                <th class="p-4 border-b-2 border-gray-100 font-bold text-center">Kompetitor Umum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-4 border-b border-gray-100">Harga</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-semibold bg-green-50">Rp 120.000</td>
+                                <td class="p-4 border-b border-gray-100 text-center">Rp 10.000 - Rp 70.000</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-4 border-b border-gray-100">Aktivitas per Kit</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-semibold bg-green-50">Tinggi (5+)</td>
+                                <td class="p-4 border-b border-gray-100 text-center">Rendah (1-2)</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-4 border-b border-gray-100">Misi Sosial & Lingkungan</td>
+                                <td class="p-4 border-b border-gray-100 text-center font-semibold bg-green-50">Ya (Dukung Artis & Upcycling)</td>
+                                <td class="p-4 border-b border-gray-100 text-center">Tidak Ada</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-4 border-b-0 font-bold">Pengalaman Digital</td>
+                                <td class="p-4 border-b-0 text-center font-bold text-lg bg-green-100">Hub Interaktif Terintegrasi</td>
+                                <td class="p-4 border-b-0 text-center font-bold text-red-700">Rendah (Hanya Media Sosial/E-commerce)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <section id="analisis" class="py-20 md:py-28 bg-secondary">
+             <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Potensi di Balik Ide</h2>
+                    <p class="text-lg mb-12">Chewbain dibangun di atas fondasi data yang kuat, mulai dari potensi pasar yang luas hingga model bisnis yang berkelanjutan. Klik diagram di bawah untuk menjelajahi potensi pasar kami.</p>
+                </div>
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div class="w-full">
+                         <div class="chart-container" style="max-width: 400px; height: 400px;">
+                            <canvas id="marketChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="market-details-container" class="section-card p-8">
+                        <h3 id="market-title" class="text-2xl font-bold text-accent mb-2"></h3>
+                        <p id="market-value-text" class="text-4xl font-bold text-dark mb-4"></p>
+                        <p id="market-description-text" class="text-muted"></p>
+                        <p class="text-xs text-gray-400 mt-4" id="market-source"></p>
+                    </div>
+                </div>
+             </div>
+        </section>
+        
+        <section id="alur" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-4">Perjalanan Customer</h2>
+                    <p class="text-lg mb-12">Dari penemuan di media sosial hingga menjadi bagian dari komunitas kami, inilah bagaimana ekosistem Chewbain bekerja untuk customer.</p>
+                </div>
+                <div class="max-w-2xl mx-auto">
+                    <div class="relative">
+                        <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200"></div>
+                        <div class="relative mb-8">
+                            <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-6 bg-accent rounded-full border-4 border-white"></div>
+                            <div class="md:ml-[55%] section-card p-6">
+                                <p class="font-bold text-lg">1. Penemuan</p>
+                                <p class="text-sm text-muted">Customer melihat iklan atau postingan influencer tentang Chewbain di Instagram/TikTok.</p>
+                            </div>
+                        </div>
+                         <div class="relative mb-8">
+                            <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-6 bg-accent rounded-full border-4 border-white"></div>
+                            <div class="md:mr-[55%] text-right section-card p-6">
+                                <p class="font-bold text-lg">2. Konversi</p>
+                                <p class="text-sm text-muted">Customer mengunjungi web kami, tertarik, dan melakukan pre-order dengan mudah.</p>
+                            </div>
+                        </div>
+                         <div class="relative mb-8">
+                            <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-6 bg-accent rounded-full border-4 border-white"></div>
+                            <div class="md:ml-[55%] section-card p-6">
+                                <p class="font-bold text-lg">3. Pengalaman Fisik</p>
+                                <p class="text-sm text-muted">Kit tiba! Customer dan pasangan menghabiskan waktu berkualitas mendekorasi, bermain, dan berkreasi bersama.</p>
+                            </div>
+                        </div>
+                         <div class="relative mb-8">
+                            <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-6 bg-accent rounded-full border-4 border-white"></div>
+                            <div class="md:mr-[55%] text-right section-card p-6">
+                                <p class="font-bold text-lg">4. Keterlibatan Digital</p>
+                                <p class="text-sm text-muted">Customer memindai kode QR untuk mengakses tantangan baru dan hub komunitas eksklusif kami.</p>
+                            </div>
+                        </div>
+                         <div class="relative">
+                            <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-6 bg-accent rounded-full border-4 border-white"></div>
+                            <div class="md:ml-[55%] section-card p-6">
+                                <p class="font-bold text-lg">5. Advokasi</p>
+                                <p class="text-sm text-muted">Customer membagikan hasil karya di media sosial dengan #DITChewbainDit, menginspirasi teman-teman mereka.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="pre-order" class="py-20 md:py-28 bg-secondary">
+            <div class="container mx-auto px-6 text-center">
+                 <h2 class="text-4xl md:text-5xl font-bold mb-4">Siap untuk Terhubung Kembali?</h2>
+                 <p class="text-lg max-w-3xl mx-auto mb-8">Jadilah yang pertama merasakan pengalaman Chewbain. Bergabunglah dengan gerakan untuk menciptakan momen berkualitas yang nyata. Lakukan pre-order sekarang dan dapatkan diskon peluncuran eksklusif!</p>
+                 <div class="section-card max-w-lg mx-auto bg-white p-8">
+                    <form>
+                        <div class="mb-4">
+                            <label for="email" class="block text-left font-semibold mb-2">Alamat Email Anda</label>
+                            <input type="email" id="email" placeholder="contoh@email.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent">
+                        </div>
+                        <button type="submit" class="w-full btn-primary px-8 py-4 rounded-full text-lg font-semibold transition-transform hover:scale-105">Gabung Daftar Tunggu Pre-Order</button>
+                    </form>
+                    <p class="text-xs text-gray-500 mt-4">Kami akan memberitahu Anda saat batch pertama siap diluncurkan. Tidak ada spam, kami janji.</p>
+                 </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white py-8">
+        <div class="container mx-auto px-6 text-center text-gray-500">
+            <p>&copy; 2025 Chewbain. Dirancang untuk menghubungkan kembali hati.</p>
+            <p class="text-sm mt-2">Sebuah Proyek Inovasi Digital oleh Mahasiswa STT Terpadu Nurul Fikri.</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Mobile Menu ---
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // --- Animated Stats ---
+        function animateOnScroll() {
+            const counters = [
+                { id: 'stat1', target: 70, triggered: false },
+                { id: 'stat2', target: 53.3, triggered: false }
+            ];
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const counter = counters.find(c => c.id === entry.target.id);
+                        if (counter && !counter.triggered) {
+                            animateCounter(counter.id, counter.target);
+                            counter.triggered = true;
+                            observer.unobserve(entry.target);
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+            counters.forEach(counter => {
+                const el = document.getElementById(counter.id);
+                if (el) observer.observe(el);
+            });
+        }
+        function animateCounter(id, target) {
+            const element = document.getElementById(id);
+            let start = 0;
+            const duration = 2000;
+            const isFloat = target % 1 !== 0;
+            const end = Math.round(target);
+            let startTime = null;
+
+            function animation(currentTime) {
+                if (startTime === null) startTime = currentTime;
+                const progress = Math.min((currentTime - startTime) / duration, 1);
+                let currentValue = Math.floor(progress * end);
+                if(isFloat && progress === 1){
+                     element.innerText = target;
+                } else if(isFloat) {
+                    currentValue = (progress * target).toFixed(1);
+                    element.innerText = currentValue;
+                } else {
+                    element.innerText = currentValue;
+                }
+                if (progress < 1) {
+                    requestAnimationFrame(animation);
+                }
+            }
+            requestAnimationFrame(animation);
+        }
+
+        // --- Financials Chart ---
+        function createFinancialsChart() {
+            const ctx = document.getElementById('financialsChart').getContext('2d');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'bar', data: { labels: ['Harga Jual', 'Biaya Produksi (HPP)', 'Laba Kotor'], datasets: [{ label: 'Nilai (Rp)', data: [120000, 91100, 28900], backgroundColor: ['#D4A59A', '#F9F160', '#B0C4DE'], borderRadius: 8, barPercentage: 0.6 }] },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.x !== null) { label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.x); } return label; } } } }, scales: { x: { beginAtZero: true, ticks: { callback: function(value, index, values) { return 'Rp ' + (value / 1000) + 'k'; } } }, y: { grid: { display: false } } } }
+                });
+            }
+        }
+        
+        // --- Interactive Market Diagram ---
+        const marketChartCanvas = document.getElementById('marketChart');
+        if (marketChartCanvas) {
+            const marketDetails = {
+                title: document.getElementById('market-title'),
+                value: document.getElementById('market-value-text'),
+                description: document.getElementById('market-description-text'),
+                source: document.getElementById('market-source'),
+            };
+
+            const data = {
+                labels: ['TAM', 'SAM', 'SOM'],
+                datasets: [{
+                    data: [4228453, 2959917, 1700], // Actual data values
+                    backgroundColor: ['rgba(212, 165, 154, 0.4)', 'rgba(212, 165, 154, 0.7)', '#D4A59A'],
+                    borderColor: '#FFFFFF',
+                    borderWidth: 2,
+                    hoverOffset: 16
+                }]
+            };
+            
+            const marketInfo = [
+                { title: 'Total Available Market (TAM)', value: '~4,2 Juta Jiwa', description: 'Seluruh populasi usia 18-28 di Jabodetabek yang menjadi target pasar potensial terbesar kami.', source: 'Sumber: BPS Jawa Barat (diolah)' },
+                { title: 'Serviceable Available Market (SAM)', value: '~2,9 Juta Jiwa', description: 'Segmen dari TAM yang secara aktif mengalami masalah distraksi ponsel dan dapat kami layani.', source: 'Sumber: 70% dari TAM (Survei Internal)' },
+                { title: 'Share of Market (SOM)', value: '850 Pasangan', description: 'Target pasar yang realistis untuk kami jangkau pada tahun pertama operasi dengan kapasitas produksi saat ini.', source: 'Sumber: Proyeksi Penjualan Internal' }
+            ];
+
+            function updateDetails(index) {
+                const info = marketInfo[index];
+                marketDetails.title.textContent = info.title;
+                marketDetails.value.textContent = info.value;
+                marketDetails.description.textContent = info.description;
+                marketDetails.source.textContent = info.source;
+            }
+
+            const marketChart = new Chart(marketChartCanvas, {
+                type: 'pie',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: ${new Intl.NumberFormat('id-ID').format(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const clickedIndex = elements[0].index;
+                            updateDetails(clickedIndex);
+                            
+                            // Explode effect
+                            marketChart.data.datasets[0].offset = marketChart.data.labels.map((_, index) => index === clickedIndex ? 20 : 0);
+                            marketChart.update();
+                        }
+                    }
+                }
+            });
+            
+            // Initial state
+            updateDetails(0);
+            marketChart.data.datasets[0].offset = [20, 0, 0];
+            marketChart.update();
+        }
+
+
+        // --- Cookie Mascot ---
+        const cookieMascot = document.getElementById('cookie-mascot');
+        const cookieBubble = document.getElementById('cookie-bubble');
+        const sections = document.querySelectorAll('main section');
+        
+        const mascotMessages = {
+            'hero': 'Hai! Selamat datang di dunia Chewbain!',
+            'masalah': 'Hmm, phubbing memang jadi masalah ya...',
+            'solusi': 'Ini dia solusinya! Buka kotaknya, yuk!',
+            'persona': 'Kalian seperti Rian dan Dita, kan?',
+            'kompetitor': 'Lihat! Kita beda dari yang lain, lho.',
+            'analisis': 'Potensinya besar, kan? Hehe.',
+            'alur': 'Begini nih serunya perjalananmu bersama kami!',
+            'pre-order': 'Yuk, jangan sampai kehabisan!'
+        };
+        
+        setTimeout(() => {
+            cookieMascot.style.top = '80vh';
+            cookieMascot.style.left = '10vw';
+        }, 2000);
+
+        setInterval(() => {
+            const y = Math.random() * (window.innerHeight - 100);
+            const x = Math.random() * (window.innerWidth - 100);
+            cookieMascot.style.top = `${y}px`;
+            cookieMascot.style.left = `${x}px`;
+        }, 6000);
+
+        let bubbleTimeout;
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const sectionId = entry.target.id;
+                    const message = mascotMessages[sectionId];
+                    if (message) {
+                        clearTimeout(bubbleTimeout);
+                        cookieBubble.textContent = message;
+                        cookieBubble.classList.add('visible');
+                        bubbleTimeout = setTimeout(() => {
+                            cookieBubble.classList.remove('visible');
+                        }, 4000);
+                    }
+                }
+            });
+        }, { threshold: 0.6 });
+
+        sections.forEach(section => sectionObserver.observe(section));
+
+        // --- 3D Unboxing Experience ---
+        function initThreeJS() {
+            const container = document.getElementById('threejs-container');
+            const infoPanel = document.getElementById('item-info-panel');
+            const infoTitle = document.getElementById('item-title');
+            const infoDesc = document.getElementById('item-description');
+            const infoImage = document.getElementById('item-image');
+            const instructionText = document.getElementById('instruction-text');
+            if (!container) return;
+            
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 3, 8);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = false;
+            controls.target.set(0, 0.5, 0);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(8, 10, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // --- Box Model ---
+            const textureLoader = new THREE.TextureLoader();
+            const handleMaterial = new THREE.MeshStandardMaterial({ color: 0xD4A59A });
+            const boxHeight = 2;
+            const boxWidth = 3;
+            const boxDepth = 1.5;
+
+            // --- Separate Box Parts for Animation ---
+            const boxGroup = new THREE.Group();
+            scene.add(boxGroup);
+
+            // Box Body (stationary part)
+            const bodyGeo = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+            const bodyMaterials = [
+                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/5upWzme.png') }), // right
+                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/5upWzme.png') }), // left
+                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/pMPefAD.png') }), // top (covered by lid)
+                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/pMPefAD.png') }), // bottom
+                new THREE.MeshStandardMaterial({ color: 0xffffff }), // front (covered by lid)
+                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/bQGV6aM.png') })  // back
+            ];
+            const body = new THREE.Mesh(bodyGeo, bodyMaterials);
+            body.position.y = boxHeight / 2;
+            boxGroup.add(body);
+            
+            // Lid Group (the part that animates open)
+            const lidGroup = new THREE.Group();
+            const lidGeo = new THREE.BoxGeometry(boxWidth + 0.05, boxHeight + 0.05, 0.05);
+            const lidMaterial = new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/qKcAPt1.png') });
+            const lid = new THREE.Mesh(lidGeo, lidMaterial);
+            lid.position.y = boxHeight / 2;
+            
+            const handleGeo = new THREE.BoxGeometry(1.5, 0.4, 0.15);
+            const handle = new THREE.Mesh(handleGeo, handleMaterial);
+            handle.position.y = boxHeight + 0.2;
+            
+            lidGroup.add(lid);
+            lidGroup.add(handle);
+            lidGroup.position.set(0, 0, boxDepth / 2);
+            boxGroup.add(lidGroup);
+
+            const items = [];
+            const itemData = [
+                { name: 'Dekorasi Cookies', desc: 'Hias bersama, ciptakan karya seni yang lezat.', type: 'flatbox', pos: [-0.8, 0, 0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Cookies' },
+                { name: 'Kartu TOD+UNO', desc: 'Pemicu percakapan seru dan mendalam.', type: 'cards', pos: [0.8, 0, 0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Kartu+TOD' },
+                { name: 'Papercraft', desc: 'Bangun kenangan 3D dari momen bersama.', type: 'papercraft', pos: [-0.8, 0, -0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Papercraft' },
+                { name: 'Stiker Set', desc: 'Ekspresikan kreativitas di mana saja.', type: 'sheet', pos: [0.3, 0, 0], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Stiker' },
+                { name: 'Panduan & Kartu', desc: 'Panduan upcycle dan kartu ucapan terima kasih.', type: 'pamphlet', pos: [0.8, 0, -0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Panduan' }
+            ];
+
+            itemData.forEach(data => {
+                const itemGroup = new THREE.Group();
+                switch (data.type) {
+                    case 'cards':
+                        for(let i = 0; i < 5; i++) {
+                            const cardGeo = new THREE.PlaneGeometry(0.6, 0.9);
+                            const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, map: textureLoader.load('https://placehold.co/100x150/D4A59A/FFFFFF?text=TOD') });
+                            const card = new THREE.Mesh(cardGeo, cardMat);
+                            card.position.y = i * 0.02;
+                            itemGroup.add(card);
+                        }
+                        itemGroup.rotation.x = -Math.PI / 2;
+                        break;
+                    case 'flatbox':
+                        const flatboxGeo = new THREE.BoxGeometry(1, 0.2, 0.7);
+                        const flatboxMat = new THREE.MeshStandardMaterial({ map: textureLoader.load('https://placehold.co/200x100/D4A59A/FFFFFF?text=Cookie+Kit') });
+                        itemGroup.add(new THREE.Mesh(flatboxGeo, flatboxMat));
+                        break;
+                    case 'sheet':
+                        const sheetGeo = new THREE.PlaneGeometry(0.7, 1);
+                        const sheetMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: textureLoader.load('https://placehold.co/200x300/D4A59A/FFFFFF?text=Stiker'), transparent: true });
+                        const sheet = new THREE.Mesh(sheetGeo, sheetMat);
+                        sheet.rotation.x = -Math.PI / 2;
+                        itemGroup.add(sheet);
+                        break;
+                    case 'pamphlet':
+                         const pamphletGeo = new THREE.PlaneGeometry(0.5, 0.8);
+                         const pamphletMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: textureLoader.load('https://placehold.co/150x200/D4A59A/FFFFFF?text=Guide'), transparent: true });
+                         const pamphlet = new THREE.Mesh(pamphletGeo, pamphletMat);
+                         pamphlet.rotation.x = -Math.PI / 2;
+                         itemGroup.add(pamphlet);
+                         break;
+                    case 'papercraft':
+                    default:
+                        const pCraftGeo = new THREE.ConeGeometry(0.4, 0.7, 4);
+                        const pCraftMat = new THREE.MeshStandardMaterial({ color: 0xD4A59A });
+                        const pCraft = new THREE.Mesh(pCraftGeo, pCraftMat);
+                        pCraft.rotation.y = Math.PI / 4;
+                        itemGroup.add(pCraft);
+                        break;
+                }
+                
+                itemGroup.name = data.name;
+                itemGroup.userData = { description: data.desc, initialPos: new THREE.Vector3(data.pos[0], data.pos[1], data.pos[2]), imageUrl: data.imageUrl };
+                itemGroup.position.y = 0.6; // Start inside the box
+                itemGroup.visible = false;
+                items.push(itemGroup);
+                scene.add(itemGroup); // Add items directly to the scene
+            });
+
+            let isBoxOpen = false;
+            let openProgress = 0;
+            const animationSpeed = 0.02;
+            let hasBeenOpened = false;
+
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            function updateMouseCoords(event, target) {
+                 const rect = target.getBoundingClientRect();
+                 mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                 mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            }
+
+            container.addEventListener('click', (event) => {
+                updateMouseCoords(event, renderer.domElement);
+                raycaster.setFromCamera(mouse, camera);
+
+                if (!hasBeenOpened) {
+                     const boxIntersects = raycaster.intersectObjects([body, lid, handle], true);
+                     if (boxIntersects.length > 0) {
+                        isBoxOpen = true;
+                        hasBeenOpened = true; 
+                        instructionText.style.opacity = '0';
+                     }
+                }
+
+                const itemIntersects = raycaster.intersectObjects(items, true);
+                if (itemIntersects.length > 0) {
+                    const clickedItem = itemIntersects[0].object.parent;
+                    infoTitle.textContent = clickedItem.name;
+                    infoDesc.textContent = clickedItem.userData.description;
+                    
+                    if (clickedItem.userData.imageUrl) {
+                        infoImage.src = clickedItem.userData.imageUrl;
+                        infoImage.alt = `Gambar ${clickedItem.name}`;
+                        infoImage.classList.remove('hidden');
+                    } else {
+                        infoImage.classList.add('hidden');
+                    }
+
+                    infoPanel.classList.remove('opacity-0', '-translate-x-4');
+                    infoPanel.classList.add('opacity-100', 'translate-x-0');
+                    return;
+                }
+            }, false);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }, false);
+            
+            const easeOutBack = t => {
+                const c1 = 1.70158;
+                const c3 = c1 + 1;
+                return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+            };
+            
+            function animate() {
+                requestAnimationFrame(animate);
+
+                if (isBoxOpen && openProgress < 1) {
+                    openProgress += animationSpeed;
+                }
+                openProgress = Math.min(1, openProgress);
+                const easedProgress = easeOutQuad(openProgress);
+                
+                // Animate lid opening from a hinge at the back
+                lidGroup.rotation.x = -easedProgress * (Math.PI / 1.5);
+                
+                items.forEach((item, index) => {
+                    const delayFactor = index * 0.1;
+                    const itemProgress = Math.max(0, Math.min(1, (easedProgress - delayFactor) / (1 - delayFactor || 1)));
+                    const bouncedProgress = easeOutBack(itemProgress);
+
+                    // Items emerge from the box
+                    const startPos = new THREE.Vector3(item.userData.initialPos.x, 0.6, item.userData.initialPos.z);
+                    const endPos = item.userData.initialPos.clone().add(new THREE.Vector3(0, 1.5, 2));
+
+                    item.position.lerpVectors(startPos, endPos, bouncedProgress);
+                    
+                    item.rotation.y += 0.005;
+                    item.rotation.z = Math.sin(itemProgress * Math.PI) * 0.1;
+
+                    item.visible = itemProgress > 0;
+                    
+                    item.children.forEach(child => {
+                       if (child.material) {
+                           child.material.opacity = itemProgress;
+                           child.material.transparent = true;
+                       }
+                    });
+                });
+                
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+             const easeOutQuad = t => t * (2 - t);
+
+            animate();
+        }
+        
+        const observerCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    if(el.id.startsWith('stat')) {
+                        animateCounter(el.id, parseFloat(el.dataset.target));
+                    } else if (el.id === 'financialsChart') {
+                        createFinancialsChart();
+                    } else if (el.id === 'threejs-container') {
+                        initThreeJS();
+                    }
+                    observer.unobserve(el);
+                }
+            });
+        };
+        
+        const observer = new IntersectionObserver(observerCallback, { threshold: 0.5 });
+        
+        document.querySelectorAll('[data-target]').forEach(el => observer.observe(el));
+        const chartCanvas = document.getElementById('financialsChart');
+        if (chartCanvas) observer.observe(chartCanvas);
+        const threeContainer = document.getElementById('threejs-container');
+        if(threeContainer) observer.observe(threeContainer);
+
+    });
+    </script>
+</body>
+</html>
