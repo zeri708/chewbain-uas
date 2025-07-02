@@ -6,10 +6,15 @@
     <title>Chewbain: Solusi Kreatif untuk Quality Time</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Preconnect to critical origins for faster resource loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://videos.pexels.com">
+    <link rel="preconnect" href="https://i.imgur.com">
+    
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -55,6 +60,10 @@
         .btn-primary:hover {
             background-color: var(--accent-hover);
         }
+        .btn-primary:disabled {
+            background-color: #a78b84;
+            cursor: not-allowed;
+        }
         .text-accent {
             color: var(--accent);
         }
@@ -81,7 +90,7 @@
             left: 50vw;
             width: 80px;
             height: 80px;
-            background-image: url('https://placehold.co/80x80/f2d2a9/c7a17a?text=');
+            background-image: url('blob:https://imgur.com/33e8d4cf-c85f-4620-a120-2bcbac4cafba');
             background-size: cover;
             border-radius: 50%;
             border: 4px solid #c7a17a;
@@ -124,6 +133,17 @@
             border-right: 8px solid transparent;
             border-top: 8px solid white;
         }
+        /* 3D Loader Style */
+        #loader-3d {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            inset: 0;
+            background-color: rgba(33, 37, 41, 0.8); /* Dark background for loader */
+            z-index: 10;
+            border-radius: 1rem;
+        }
     </style>
 </head>
 <body class="text-gray-700">
@@ -155,8 +175,8 @@
 
     <main>
         <section id="hero" class="relative min-h-[80vh] flex items-center overflow-hidden">
-            <video id="hero-video" autoplay loop muted playsinline>
-                <source src="https://videos.pexels.com/video-files/3209828/3209828-hd_1280_720_25fps.mp4" type="video/mp4">
+            <video id="hero-video" loop muted playsinline>
+                <source data-src="https://videos.pexels.com/video-files/3209828/3209828-hd_1280_720_25fps.mp4" type="video/mp4">
                 Browser Anda tidak mendukung tag video.
             </video>
             <div class="absolute inset-0 bg-black/50 z-20"></div>
@@ -193,16 +213,21 @@
             <div class="container mx-auto px-6">
                 <div class="text-center max-w-3xl mx-auto">
                     <h2 class="text-4xl md:text-5xl font-bold mb-4">Buka Kotak Kebahagiaan Anda</h2>
-                    <p class="text-lg mb-12">Ini bukan sekadar produk, ini adalah sebuah pengalaman. Klik pada kotak untuk membongkar keseruannya dan temukan dunia kreativitas di dalamnya. Klik setiap item untuk melihat detailnya.</p>
+                    <p class="text-lg mb-12">Ini bukan sekadar produk, ini adalah sebuah pengalaman. Gunakan tombol untuk membongkar keseruannya dan temukan dunia kreativitas di dalamnya.</p>
                 </div>
 
                 <div class="grid lg:grid-cols-3 gap-8 items-start">
                     <div class="lg:col-span-2">
-                        <div id="threejs-container" class="w-full h-96 md:h-[500px] rounded-2xl cursor-pointer bg-gray-100 shadow-inner relative">
-                            <div id="instruction-text" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-500 font-semibold p-4 bg-white/70 rounded-lg transition-opacity duration-500">Klik Kotak Untuk Membuka</div>
+                        <div id="threejs-container" class="w-full h-96 md:h-[500px] rounded-2xl cursor-pointer bg-gray-800 shadow-inner relative">
+                            <div id="loader-3d">
+                                <div class="w-16 h-16 border-4 border-dashed rounded-full animate-spin" style="border-color: var(--accent);"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-center mt-4">
+                            <button id="toggle-box-btn" class="btn-primary px-6 py-3 rounded-full font-semibold transition-opacity opacity-0" disabled>Buka Kotak</button>
                         </div>
                     </div>
-                    <div id="item-info-panel" class="bg-white p-6 rounded-2xl shadow-lg opacity-0 transform -translate-x-4 h-full">
+                    <div id="item-info-panel" class="bg-white p-6 rounded-2xl shadow-lg opacity-0 transform -translate-x-4 h-full transition-all duration-300">
                         <img id="item-image" src="" alt="Gambar item" class="w-full h-48 object-cover rounded-lg mb-4 hidden">
                         <h3 id="item-title" class="text-2xl font-bold mb-2 text-accent">Pilih sebuah item</h3>
                         <p id="item-description" class="text-muted">Klik pada salah satu item 3D setelah kotak terbuka untuk melihat informasinya di sini.</p>
@@ -391,31 +416,28 @@
             mobileMenu.classList.toggle('hidden');
         });
 
-        // --- Animated Stats ---
-        function animateOnScroll() {
-            const counters = [
-                { id: 'stat1', target: 70, triggered: false },
-                { id: 'stat2', target: 53.3, triggered: false }
-            ];
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const counter = counters.find(c => c.id === entry.target.id);
-                        if (counter && !counter.triggered) {
-                            animateCounter(counter.id, counter.target);
-                            counter.triggered = true;
-                            observer.unobserve(entry.target);
-                        }
-                    }
-                });
-            }, { threshold: 0.5 });
-            counters.forEach(counter => {
-                const el = document.getElementById(counter.id);
-                if (el) observer.observe(el);
+        // --- Lazy Load Hero Video ---
+        const videoObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const video = entry.target;
+                    const source = video.querySelector('source');
+                    video.src = source.dataset.src;
+                    video.load();
+                    video.play().catch(e => console.error("Autoplay was prevented:", e));
+                    observer.unobserve(video);
+                }
             });
+        });
+        const heroVideo = document.getElementById('hero-video');
+        if (heroVideo) {
+            videoObserver.observe(heroVideo);
         }
+
+        // --- Animated Stats ---
         function animateCounter(id, target) {
             const element = document.getElementById(id);
+            if(!element) return;
             let start = 0;
             const duration = 2000;
             const isFloat = target % 1 !== 0;
@@ -440,21 +462,12 @@
             }
             requestAnimationFrame(animation);
         }
-
-        // --- Financials Chart ---
-        function createFinancialsChart() {
-            const ctx = document.getElementById('financialsChart').getContext('2d');
-            if (ctx) {
-                new Chart(ctx, {
-                    type: 'bar', data: { labels: ['Harga Jual', 'Biaya Produksi (HPP)', 'Laba Kotor'], datasets: [{ label: 'Nilai (Rp)', data: [120000, 91100, 28900], backgroundColor: ['#D4A59A', '#F9F160', '#B0C4DE'], borderRadius: 8, barPercentage: 0.6 }] },
-                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.x !== null) { label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.x); } return label; } } } }, scales: { x: { beginAtZero: true, ticks: { callback: function(value, index, values) { return 'Rp ' + (value / 1000) + 'k'; } } }, y: { grid: { display: false } } } }
-                });
-            }
-        }
         
         // --- Interactive Market Diagram ---
-        const marketChartCanvas = document.getElementById('marketChart');
-        if (marketChartCanvas) {
+        function createMarketChart() {
+            const marketChartCanvas = document.getElementById('marketChart');
+            if (!marketChartCanvas) return;
+
             const marketDetails = {
                 title: document.getElementById('market-title'),
                 value: document.getElementById('market-value-text'),
@@ -465,7 +478,7 @@
             const data = {
                 labels: ['TAM', 'SAM', 'SOM'],
                 datasets: [{
-                    data: [4228453, 2959917, 1700], // Actual data values
+                    data: [4228453, 2959917, 1700],
                     backgroundColor: ['rgba(212, 165, 154, 0.4)', 'rgba(212, 165, 154, 0.7)', '#D4A59A'],
                     borderColor: '#FFFFFF',
                     borderWidth: 2,
@@ -494,9 +507,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                        },
+                        legend: { position: 'bottom' },
                         tooltip: {
                              callbacks: {
                                 label: function(context) {
@@ -509,8 +520,6 @@
                         if (elements.length > 0) {
                             const clickedIndex = elements[0].index;
                             updateDetails(clickedIndex);
-                            
-                            // Explode effect
                             marketChart.data.datasets[0].offset = marketChart.data.labels.map((_, index) => index === clickedIndex ? 20 : 0);
                             marketChart.update();
                         }
@@ -518,235 +527,277 @@
                 }
             });
             
-            // Initial state
             updateDetails(0);
             marketChart.data.datasets[0].offset = [20, 0, 0];
             marketChart.update();
         }
 
-
         // --- Cookie Mascot ---
         const cookieMascot = document.getElementById('cookie-mascot');
-        const cookieBubble = document.getElementById('cookie-bubble');
-        const sections = document.querySelectorAll('main section');
-        
-        const mascotMessages = {
-            'hero': 'Hai! Selamat datang di dunia Chewbain!',
-            'masalah': 'Hmm, phubbing memang jadi masalah ya...',
-            'solusi': 'Ini dia solusinya! Buka kotaknya, yuk!',
-            'persona': 'Kalian seperti Rian dan Dita, kan?',
-            'kompetitor': 'Lihat! Kita beda dari yang lain, lho.',
-            'analisis': 'Potensinya besar, kan? Hehe.',
-            'alur': 'Begini nih serunya perjalananmu bersama kami!',
-            'pre-order': 'Yuk, jangan sampai kehabisan!'
-        };
-        
-        setTimeout(() => {
-            cookieMascot.style.top = '80vh';
-            cookieMascot.style.left = '10vw';
-        }, 2000);
-
-        setInterval(() => {
-            const y = Math.random() * (window.innerHeight - 100);
-            const x = Math.random() * (window.innerWidth - 100);
-            cookieMascot.style.top = `${y}px`;
-            cookieMascot.style.left = `${x}px`;
-        }, 6000);
-
-        let bubbleTimeout;
-        const sectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const sectionId = entry.target.id;
-                    const message = mascotMessages[sectionId];
-                    if (message) {
-                        clearTimeout(bubbleTimeout);
-                        cookieBubble.textContent = message;
-                        cookieBubble.classList.add('visible');
-                        bubbleTimeout = setTimeout(() => {
-                            cookieBubble.classList.remove('visible');
-                        }, 4000);
+        if (cookieMascot) {
+            const cookieBubble = document.getElementById('cookie-bubble');
+            const sections = document.querySelectorAll('main section');
+            const mascotMessages = {
+                'hero': 'Hai! Selamat datang di dunia Chewbain!', 'masalah': 'Hmm, phubbing memang jadi masalah ya...', 'solusi': 'Ini dia solusinya! Buka kotaknya, yuk!', 'persona': 'Kalian seperti Rian dan Dita, kan?', 'kompetitor': 'Lihat! Kita beda dari yang lain, lho.', 'analisis': 'Potensinya besar, kan? Hehe.', 'alur': 'Begini nih serunya perjalananmu bersama kami!', 'pre-order': 'Yuk, jangan sampai kehabisan!'
+            };
+            setTimeout(() => { cookieMascot.style.top = '80vh'; cookieMascot.style.left = '10vw'; }, 2000);
+            setInterval(() => { const y = Math.random() * (window.innerHeight - 100); const x = Math.random() * (window.innerWidth - 100); cookieMascot.style.top = `${y}px`; cookieMascot.style.left = `${x}px`; }, 6000);
+            let bubbleTimeout;
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const sectionId = entry.target.id;
+                        const message = mascotMessages[sectionId];
+                        if (message) { clearTimeout(bubbleTimeout); cookieBubble.textContent = message; cookieBubble.classList.add('visible'); bubbleTimeout = setTimeout(() => { cookieBubble.classList.remove('visible'); }, 4000); }
                     }
-                }
-            });
-        }, { threshold: 0.6 });
-
-        sections.forEach(section => sectionObserver.observe(section));
+                });
+            }, { threshold: 0.6 });
+            sections.forEach(section => sectionObserver.observe(section));
+        }
 
         // --- 3D Unboxing Experience ---
         function initThreeJS() {
             const container = document.getElementById('threejs-container');
+            const loader3D = document.getElementById('loader-3d');
+            const toggleBtn = document.getElementById('toggle-box-btn');
             const infoPanel = document.getElementById('item-info-panel');
             const infoTitle = document.getElementById('item-title');
             const infoDesc = document.getElementById('item-description');
             const infoImage = document.getElementById('item-image');
-            const instructionText = document.getElementById('instruction-text');
             if (!container) return;
             
+            const loadingManager = new THREE.LoadingManager();
+            loadingManager.onLoad = () => {
+                loader3D.style.display = 'none';
+                toggleBtn.classList.remove('opacity-0');
+                toggleBtn.disabled = false;
+            };
+            loadingManager.onError = (url) => {
+                console.error(`There was an error loading ${url}`);
+                loader3D.innerHTML = `<p class="text-red-500 font-semibold">Gagal memuat aset 3D.</p>`;
+            };
+
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(0, 3, 8);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            scene.background = new THREE.Color(0x212529);
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 4, 10);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
+            
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.enableZoom = false;
-            controls.target.set(0, 0.5, 0);
+            controls.target.set(0, 1, 0);
 
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
             scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
             directionalLight.position.set(8, 10, 5);
-            directionalLight.castShadow = true;
             scene.add(directionalLight);
 
-            // --- Box Model ---
-            const textureLoader = new THREE.TextureLoader();
-            const handleMaterial = new THREE.MeshStandardMaterial({ color: 0xD4A59A });
-            const boxHeight = 2;
-            const boxWidth = 3;
-            const boxDepth = 1.5;
+            const textureLoader = new THREE.TextureLoader(loadingManager);
+            
+            // --- Centralized Texture Definitions ---
+            const itemTextures = {
+                cookies: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Cookies',
+                cookieKit: 'https://placehold.co/200x100/D4A59A/FFFFFF?text=Cookie+Kit',
+                cards: 'https://placehold.co/100x150/D4A59A/FFFFFF?text=TOD',
+                stickers: 'https://placehold.co/200x300/D4A59A/FFFFFF?text=Stiker',
+                guide: 'https://placehold.co/150x200/D4A59A/FFFFFF?text=Guide',
+                papercraftFace: 'https://placehold.co/100x100/FFFFFF/f08080?text=^_^',
+                papercraftBody: 'https://placehold.co/100x100/FFFFFF/d3d3d3?text='
+            };
 
-            // --- Separate Box Parts for Animation ---
+            const boxHeight = 2, boxWidth = 3, boxDepth = 1.5;
             const boxGroup = new THREE.Group();
             scene.add(boxGroup);
 
-            // Box Body (stationary part)
-            const bodyGeo = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+            // --- Box Model with Handle ---
+            const frontTexture = textureLoader.load('https://placehold.co/600x400/FFFFFF/e89a9a?text=Do+it+Together+with+Chewbain');
+            const sideTexture = textureLoader.load('https://placehold.co/300x400/FFFFFF/e89a9a?text=Side+Pattern');
+            const otherTexture = textureLoader.load('https://placehold.co/600x300/FFFFFF/e89a9a?text=Pattern');
+
             const bodyMaterials = [
-                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/5upWzme.png') }), // right
-                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/5upWzme.png') }), // left
-                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/pMPefAD.png') }), // top (covered by lid)
-                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/pMPefAD.png') }), // bottom
-                new THREE.MeshStandardMaterial({ color: 0xffffff }), // front (covered by lid)
-                new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/bQGV6aM.png') })  // back
+                new THREE.MeshStandardMaterial({ map: sideTexture }),
+                new THREE.MeshStandardMaterial({ map: sideTexture }),
+                new THREE.MeshStandardMaterial({ map: otherTexture }),
+                new THREE.MeshStandardMaterial({ map: otherTexture }),
+                new THREE.MeshStandardMaterial({ map: frontTexture }),
+                new THREE.MeshStandardMaterial({ map: otherTexture })
             ];
+            const bodyGeo = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
             const body = new THREE.Mesh(bodyGeo, bodyMaterials);
             body.position.y = boxHeight / 2;
             boxGroup.add(body);
             
-            // Lid Group (the part that animates open)
-            const lidGroup = new THREE.Group();
-            const lidGeo = new THREE.BoxGeometry(boxWidth + 0.05, boxHeight + 0.05, 0.05);
-            const lidMaterial = new THREE.MeshStandardMaterial({ map: textureLoader.load('https://i.imgur.com/qKcAPt1.png') });
-            const lid = new THREE.Mesh(lidGeo, lidMaterial);
-            lid.position.y = boxHeight / 2;
+            const lidPivot = new THREE.Group();
+            lidPivot.position.set(0, boxHeight, -boxDepth / 2);
+            boxGroup.add(lidPivot);
             
-            const handleGeo = new THREE.BoxGeometry(1.5, 0.4, 0.15);
+            const lidGeo = new THREE.BoxGeometry(boxWidth, 0.1, boxDepth);
+            const lid = new THREE.Mesh(lidGeo, new THREE.MeshStandardMaterial({map: otherTexture}));
+            lid.position.set(0, 0.05, boxDepth / 2);
+            lidPivot.add(lid);
+
+            const handleMaterial = new THREE.MeshStandardMaterial({ color: 0xe89a9a, side: THREE.DoubleSide });
+            const handleShape = new THREE.Shape();
+            const w = 1.8, h = 1.0, r = 0.2;
+            handleShape.moveTo(0, r);
+            handleShape.lineTo(0, h - r);
+            handleShape.absarc(r, h - r, r, Math.PI, Math.PI / 2, true);
+            handleShape.lineTo(w - r, h);
+            handleShape.absarc(w - r, h - r, r, Math.PI / 2, 0, true);
+            handleShape.lineTo(w, r);
+            handleShape.absarc(w - r, r, r, 0, -Math.PI / 2, true);
+            handleShape.lineTo(r, 0);
+            handleShape.absarc(r, r, r, -Math.PI / 2, -Math.PI, true);
+
+            const holePath = new THREE.Path();
+            const iw = 1.2, ih = 0.5, ir = 0.1;
+            const ix = (w - iw) / 2, iy = (h - ih) / 2;
+            holePath.moveTo(ix, iy + ir);
+            holePath.lineTo(ix, iy + ih - ir);
+            holePath.absarc(ix + ir, iy + ih - ir, ir, Math.PI, Math.PI / 2, true);
+            holePath.lineTo(ix + iw - ir, iy + ih);
+            holePath.absarc(ix + iw - ir, iy + ih - ir, ir, Math.PI / 2, 0, true);
+            holePath.lineTo(ix + iw, iy + ir);
+            holePath.absarc(ix + iw - ir, iy + ir, ir, 0, -Math.PI / 2, true);
+            holePath.lineTo(ix + ir, iy);
+            holePath.absarc(ix + ir, iy + ir, ir, -Math.PI / 2, -Math.PI, true);
+            handleShape.holes.push(holePath);
+
+            const extrudeSettings = { steps: 1, depth: 0.1, bevelEnabled: false };
+            const handleGeo = new THREE.ExtrudeGeometry(handleShape, extrudeSettings);
             const handle = new THREE.Mesh(handleGeo, handleMaterial);
-            handle.position.y = boxHeight + 0.2;
-            
-            lidGroup.add(lid);
-            lidGroup.add(handle);
-            lidGroup.position.set(0, 0, boxDepth / 2);
-            boxGroup.add(lidGroup);
+            handle.position.set(-w / 2, 0.1, (boxDepth / 2) - (extrudeSettings.depth / 2));
+            lidPivot.add(handle);
 
             const items = [];
             const itemData = [
-                { name: 'Dekorasi Cookies', desc: 'Hias bersama, ciptakan karya seni yang lezat.', type: 'flatbox', pos: [-0.8, 0, 0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Cookies' },
-                { name: 'Kartu TOD+UNO', desc: 'Pemicu percakapan seru dan mendalam.', type: 'cards', pos: [0.8, 0, 0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Kartu+TOD' },
-                { name: 'Papercraft', desc: 'Bangun kenangan 3D dari momen bersama.', type: 'papercraft', pos: [-0.8, 0, -0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Papercraft' },
-                { name: 'Stiker Set', desc: 'Ekspresikan kreativitas di mana saja.', type: 'sheet', pos: [0.3, 0, 0], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Stiker' },
-                { name: 'Panduan & Kartu', desc: 'Panduan upcycle dan kartu ucapan terima kasih.', type: 'pamphlet', pos: [0.8, 0, -0.8], imageUrl: 'https://placehold.co/400x300/FDF8F5/D4A59A?text=Panduan' }
+                { name: 'Dekorasi Cookies', desc: 'Hias bersama, ciptakan karya seni yang lezat.', type: 'flatbox', pos: [-0.8, 0, 0.8], imageUrl: itemTextures.cookies },
+                { name: 'Kartu TOD+UNO', desc: 'Pemicu percakapan seru dan mendalam.', type: 'cards', pos: [0.8, 0, 0.8], imageUrl: itemTextures.cards },
+                { name: 'Papercraft Kelinci', desc: 'Bangun kenangan 3D dari momen bersama.', type: 'papercraft', pos: [-0.8, 0, -0.8], imageUrl: itemTextures.papercraftFace },
+                { name: 'Stiker Set', desc: 'Ekspresikan kreativitas di mana saja.', type: 'sheet', pos: [0.3, 0, 0], imageUrl: itemTextures.stickers },
+                { name: 'Panduan & Kartu', desc: 'Panduan upcycle dan kartu ucapan terima kasih.', type: 'pamphlet', pos: [0.8, 0, -0.8], imageUrl: itemTextures.guide }
             ];
 
             itemData.forEach(data => {
                 const itemGroup = new THREE.Group();
                 switch (data.type) {
-                    case 'cards':
-                        for(let i = 0; i < 5; i++) {
-                            const cardGeo = new THREE.PlaneGeometry(0.6, 0.9);
-                            const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, map: textureLoader.load('https://placehold.co/100x150/D4A59A/FFFFFF?text=TOD') });
-                            const card = new THREE.Mesh(cardGeo, cardMat);
-                            card.position.y = i * 0.02;
-                            itemGroup.add(card);
-                        }
-                        itemGroup.rotation.x = -Math.PI / 2;
+                    case 'cards': 
+                        for(let i = 0; i < 5; i++) { 
+                            const cardGeo = new THREE.PlaneGeometry(0.6, 0.9); 
+                            const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, map: textureLoader.load(itemTextures.cards) }); 
+                            const card = new THREE.Mesh(cardGeo, cardMat); card.position.y = i * 0.02; 
+                            itemGroup.add(card); 
+                        } 
+                        itemGroup.rotation.x = -Math.PI / 2; 
                         break;
-                    case 'flatbox':
-                        const flatboxGeo = new THREE.BoxGeometry(1, 0.2, 0.7);
-                        const flatboxMat = new THREE.MeshStandardMaterial({ map: textureLoader.load('https://placehold.co/200x100/D4A59A/FFFFFF?text=Cookie+Kit') });
-                        itemGroup.add(new THREE.Mesh(flatboxGeo, flatboxMat));
+                    case 'flatbox': 
+                        const flatboxGeo = new THREE.BoxGeometry(1, 0.2, 0.7); 
+                        const flatboxMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(itemTextures.cookieKit) }); 
+                        itemGroup.add(new THREE.Mesh(flatboxGeo, flatboxMat)); 
                         break;
-                    case 'sheet':
-                        const sheetGeo = new THREE.PlaneGeometry(0.7, 1);
-                        const sheetMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: textureLoader.load('https://placehold.co/200x300/D4A59A/FFFFFF?text=Stiker'), transparent: true });
-                        const sheet = new THREE.Mesh(sheetGeo, sheetMat);
-                        sheet.rotation.x = -Math.PI / 2;
-                        itemGroup.add(sheet);
+                    case 'sheet': 
+                        const sheetGeo = new THREE.PlaneGeometry(0.7, 1); 
+                        const sheetMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: textureLoader.load(itemTextures.stickers), transparent: true }); 
+                        const sheet = new THREE.Mesh(sheetGeo, sheetMat); 
+                        sheet.rotation.x = -Math.PI / 2; 
+                        itemGroup.add(sheet); 
                         break;
-                    case 'pamphlet':
-                         const pamphletGeo = new THREE.PlaneGeometry(0.5, 0.8);
-                         const pamphletMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: textureLoader.load('https://placehold.co/150x200/D4A59A/FFFFFF?text=Guide'), transparent: true });
-                         const pamphlet = new THREE.Mesh(pamphletGeo, pamphletMat);
-                         pamphlet.rotation.x = -Math.PI / 2;
-                         itemGroup.add(pamphlet);
-                         break;
+                    case 'pamphlet': 
+                        const pamphletGeo = new THREE.PlaneGeometry(0.5, 0.8); 
+                        const pamphletMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: textureLoader.load(itemTextures.guide), transparent: true }); 
+                        const pamphlet = new THREE.Mesh(pamphletGeo, pamphletMat); 
+                        pamphlet.rotation.x = -Math.PI / 2; 
+                        itemGroup.add(pamphlet); 
+                        break;
                     case 'papercraft':
-                    default:
-                        const pCraftGeo = new THREE.ConeGeometry(0.4, 0.7, 4);
-                        const pCraftMat = new THREE.MeshStandardMaterial({ color: 0xD4A59A });
-                        const pCraft = new THREE.Mesh(pCraftGeo, pCraftMat);
-                        pCraft.rotation.y = Math.PI / 4;
-                        itemGroup.add(pCraft);
+                        const s = 0.5; // size of each cube
+                        const bodyMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(itemTextures.papercraftBody) });
+                        const faceMat = new THREE.MeshStandardMaterial({ map: textureLoader.load(itemTextures.papercraftFace) });
+                        const headMaterials = [ bodyMat, bodyMat, bodyMat, bodyMat, faceMat, bodyMat ];
+
+                        // Body
+                        const body1 = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), bodyMat);
+                        const body2 = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), bodyMat);
+                        body2.position.y = -s;
+                        const body3 = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), bodyMat);
+                        body3.position.y = -s * 2;
+                        
+                        // Head
+                        const head = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), headMaterials);
+                        head.position.y = s;
+
+                        // Arms
+                        const arm1 = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), bodyMat);
+                        arm1.position.set(-s, 0, 0);
+                        const arm2 = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), bodyMat);
+                        arm2.position.set(s, 0, 0);
+                        
+                        // Ears
+                        const earShape = new THREE.Shape();
+                        earShape.moveTo(0, 0);
+                        earShape.absarc(0, 0.2, 0.2, 0, Math.PI, false);
+                        const earGeo = new THREE.ShapeGeometry(earShape);
+                        const earMat = new THREE.MeshStandardMaterial({ color: 0xf5c6c6, side: THREE.DoubleSide });
+                        const earL = new THREE.Mesh(earGeo, earMat);
+                        earL.scale.set(0.8, 1, 1);
+                        earL.position.set(-s/4, s * 1.5, 0);
+                        const earR = new THREE.Mesh(earGeo, earMat);
+                        earR.scale.set(0.8, 1, 1);
+                        earR.position.set(s/4, s * 1.5, 0);
+
+                        itemGroup.add(body1, body2, body3, head, arm1, arm2, earL, earR);
+                        itemGroup.scale.set(0.8, 0.8, 0.8);
                         break;
                 }
-                
                 itemGroup.name = data.name;
                 itemGroup.userData = { description: data.desc, initialPos: new THREE.Vector3(data.pos[0], data.pos[1], data.pos[2]), imageUrl: data.imageUrl };
-                itemGroup.position.y = 0.6; // Start inside the box
+                itemGroup.position.y = 0.6;
                 itemGroup.visible = false;
                 items.push(itemGroup);
-                scene.add(itemGroup); // Add items directly to the scene
+                scene.add(itemGroup);
             });
 
-            let isBoxOpen = false;
-            let openProgress = 0;
+            let isBoxOpen = false, openProgress = 0;
             const animationSpeed = 0.02;
-            let hasBeenOpened = false;
-
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2();
 
-            function updateMouseCoords(event, target) {
-                 const rect = target.getBoundingClientRect();
-                 mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                 mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            }
+            toggleBtn.addEventListener('click', () => {
+                if (openProgress > 0 && openProgress < 1) return;
+                isBoxOpen = !isBoxOpen;
+                toggleBtn.textContent = isBoxOpen ? 'Tutup Kotak' : 'Buka Kotak';
+                if (!isBoxOpen) {
+                     infoPanel.classList.add('opacity-0', '-translate-x-4');
+                }
+            });
 
             container.addEventListener('click', (event) => {
-                updateMouseCoords(event, renderer.domElement);
-                raycaster.setFromCamera(mouse, camera);
+                 const rect = container.getBoundingClientRect();
+                 mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                 mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                 raycaster.setFromCamera(mouse, camera);
 
-                if (!hasBeenOpened) {
-                     const boxIntersects = raycaster.intersectObjects([body, lid, handle], true);
-                     if (boxIntersects.length > 0) {
-                        isBoxOpen = true;
-                        hasBeenOpened = true; 
-                        instructionText.style.opacity = '0';
-                     }
-                }
+                if (!isBoxOpen) return;
 
                 const itemIntersects = raycaster.intersectObjects(items, true);
                 if (itemIntersects.length > 0) {
-                    const clickedItem = itemIntersects[0].object.parent;
+                    const clickedItem = itemIntersects.find(i => i.object.parent.name)?.object.parent;
+                    if (!clickedItem) return;
+                    
                     infoTitle.textContent = clickedItem.name;
                     infoDesc.textContent = clickedItem.userData.description;
-                    
                     if (clickedItem.userData.imageUrl) {
-                        infoImage.src = clickedItem.userData.imageUrl;
-                        infoImage.alt = `Gambar ${clickedItem.name}`;
-                        infoImage.classList.remove('hidden');
+                        infoImage.src = clickedItem.userData.imageUrl; infoImage.alt = `Gambar ${clickedItem.name}`; infoImage.classList.remove('hidden');
                     } else {
                         infoImage.classList.add('hidden');
                     }
-
                     infoPanel.classList.remove('opacity-0', '-translate-x-4');
-                    infoPanel.classList.add('opacity-100', 'translate-x-0');
-                    return;
                 }
             }, false);
 
@@ -756,81 +807,77 @@
                 renderer.setSize(container.clientWidth, container.clientHeight);
             }, false);
             
-            const easeOutBack = t => {
-                const c1 = 1.70158;
-                const c3 = c1 + 1;
-                return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-            };
-            
+            const easeOutBack = t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+            const easeOutQuad = t => t * (2 - t);
+
             function animate() {
                 requestAnimationFrame(animate);
 
                 if (isBoxOpen && openProgress < 1) {
-                    openProgress += animationSpeed;
+                    openProgress = Math.min(1, openProgress + animationSpeed);
+                } else if (!isBoxOpen && openProgress > 0) {
+                    openProgress = Math.max(0, openProgress - animationSpeed);
                 }
-                openProgress = Math.min(1, openProgress);
                 const easedProgress = easeOutQuad(openProgress);
                 
-                // Animate lid opening from a hinge at the back
-                lidGroup.rotation.x = -easedProgress * (Math.PI / 1.5);
-                
+                lidPivot.rotation.x = easedProgress * -Math.PI / 1.2;
+
                 items.forEach((item, index) => {
                     const delayFactor = index * 0.1;
                     const itemProgress = Math.max(0, Math.min(1, (easedProgress - delayFactor) / (1 - delayFactor || 1)));
                     const bouncedProgress = easeOutBack(itemProgress);
-
-                    // Items emerge from the box
                     const startPos = new THREE.Vector3(item.userData.initialPos.x, 0.6, item.userData.initialPos.z);
                     const endPos = item.userData.initialPos.clone().add(new THREE.Vector3(0, 1.5, 2));
-
                     item.position.lerpVectors(startPos, endPos, bouncedProgress);
-                    
                     item.rotation.y += 0.005;
                     item.rotation.z = Math.sin(itemProgress * Math.PI) * 0.1;
-
                     item.visible = itemProgress > 0;
-                    
-                    item.children.forEach(child => {
-                       if (child.material) {
-                           child.material.opacity = itemProgress;
-                           child.material.transparent = true;
-                       }
-                    });
                 });
                 
                 controls.update();
                 renderer.render(scene, camera);
             }
-
-             const easeOutQuad = t => t * (2 - t);
-
             animate();
         }
         
+        // --- Lazy Script Loader ---
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // --- Master Intersection Observer ---
         const observerCallback = (entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const el = entry.target;
                     if(el.id.startsWith('stat')) {
                         animateCounter(el.id, parseFloat(el.dataset.target));
-                    } else if (el.id === 'financialsChart') {
-                        createFinancialsChart();
+                    } else if (el.id === 'marketChart') {
+                        createMarketChart();
                     } else if (el.id === 'threejs-container') {
-                        initThreeJS();
+                        loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+                            .then(() => loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'))
+                            .then(initThreeJS)
+                            .catch(err => console.error("Failed to load 3D scripts:", err));
                     }
                     observer.unobserve(el);
                 }
             });
         };
         
-        const observer = new IntersectionObserver(observerCallback, { threshold: 0.5 });
+        const mainObserver = new IntersectionObserver(observerCallback, { rootMargin: "50px", threshold: 0.1 });
         
-        document.querySelectorAll('[data-target]').forEach(el => observer.observe(el));
-        const chartCanvas = document.getElementById('financialsChart');
-        if (chartCanvas) observer.observe(chartCanvas);
+        document.querySelectorAll('[data-target]').forEach(el => mainObserver.observe(el));
         const threeContainer = document.getElementById('threejs-container');
-        if(threeContainer) observer.observe(threeContainer);
-
+        if(threeContainer) mainObserver.observe(threeContainer);
+        const marketChartEl = document.getElementById('marketChart');
+        if(marketChartEl) mainObserver.observe(marketChartEl);
     });
     </script>
 </body>
